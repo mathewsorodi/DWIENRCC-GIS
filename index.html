@@ -8,12 +8,15 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <link rel="stylesheet" href="css/leaflet.css"><link rel="stylesheet" href="css/L.Control.Locate.min.css">
         <link rel="stylesheet" href="css/qgis2web.css"><link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/MarkerCluster.css">
+        <link rel="stylesheet" href="css/MarkerCluster.Default.css">
         <link rel="stylesheet" href="css/leaflet-search.css">
         <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
         <style>
         #map {
-            width: 793px;
-            height: 797px;
+            width: 1019px;
+            height: 1211px;
         }
         </style>
         <title></title>
@@ -31,19 +34,49 @@
         <script src="js/labelgun.min.js"></script>
         <script src="js/labels.js"></script>
         <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet.markercluster.js"></script>
         <script src="js/leaflet-search.js"></script>
         <script src="data/Busia_County_Boundary_1.js"></script>
         <script src="data/Sublocation_Centroids_2.js"></script>
-        <script src="data/Routes_3.js"></script>
-        <script src="data/Roads_4.js"></script>
+        <script src="data/Busia_Sublocation_3.js"></script>
+        <script src="data/Routes_4.js"></script>
         <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+            highlightLayer.openPopup();
+        }
         var map = L.map('map', {
-            zoomControl:true, maxZoom:28, minZoom:1
+            zoomControl:true, maxZoom:20, minZoom:1
         })
         var hash = new L.Hash(map);
         map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
         var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
         L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .className += ' fas fa-ruler';
         var bounds_group = new L.featureGroup([]);
         function setBounds() {
             if (bounds_group.getLayers().length) {
@@ -58,11 +91,26 @@
             opacity: 1.0,
             attribution: '',
             minZoom: 1,
-            maxZoom: 28,
+            maxZoom: 20,
         });
         layer_GoogleSatelliteHybrid_0;
         map.addLayer(layer_GoogleSatelliteHybrid_0);
         function pop_Busia_County_Boundary_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
             var popupContent = '<table>\
                     <tr>\
                         <td colspan="2">' + (feature.properties['OBJECTID'] !== null ? autolinker.link(feature.properties['OBJECTID'].toLocaleString()) : '') + '</td>\
@@ -117,6 +165,21 @@
         bounds_group.addLayer(layer_Busia_County_Boundary_1);
         map.addLayer(layer_Busia_County_Boundary_1);
         function pop_Sublocation_Centroids_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
             var popupContent = '<table>\
                     <tr>\
                         <td colspan="2">' + (feature.properties['OBJECTID'] !== null ? autolinker.link(feature.properties['OBJECTID'].toLocaleString()) : '') + '</td>\
@@ -149,7 +212,8 @@
                         <td colspan="2">' + (feature.properties['SLCode'] !== null ? autolinker.link(feature.properties['SLCode'].toLocaleString()) : '') + '</td>\
                     </tr>\
                     <tr>\
-                        <td colspan="2">' + (feature.properties['SLName'] !== null ? autolinker.link(feature.properties['SLName'].toLocaleString()) : '') + '</td>\
+                        <th scope="row">SLName</th>\
+                        <td>' + (feature.properties['SLName'] !== null ? autolinker.link(feature.properties['SLName'].toLocaleString()) : '') + '</td>\
                     </tr>\
                     <tr>\
                         <td colspan="2">' + (feature.properties['ConstCode'] !== null ? autolinker.link(feature.properties['ConstCode'].toLocaleString()) : '') + '</td>\
@@ -182,7 +246,7 @@
                         <td colspan="2">' + (feature.properties['ORIG_FID'] !== null ? autolinker.link(feature.properties['ORIG_FID'].toLocaleString()) : '') + '</td>\
                     </tr>\
                     <tr>\
-                        <td colspan="2">' + (feature.properties['Mileage'] !== null ? autolinker.link(feature.properties['Mileage'].toLocaleString()) : '') + '</td>\
+                        <td colspan="2"><strong>Mileage</strong><br />' + (feature.properties['Mileage'] !== null ? autolinker.link(feature.properties['Mileage'].toLocaleString()) : '') + '</td>\
                     </tr>\
                 </table>';
             layer.bindPopup(popupContent, {maxHeight: 400});
@@ -191,7 +255,7 @@
         function style_Sublocation_Centroids_2_0() {
             return {
                 pane: 'pane_Sublocation_Centroids_2',
-                radius: 4.0,
+                radius: 5.9999999999999964,
                 opacity: 1,
                 color: 'rgba(128,17,25,1.0)',
                 dashArray: '',
@@ -222,9 +286,145 @@
                 return L.circleMarker(latlng, style_Sublocation_Centroids_2_0(feature));
             },
         });
+        var cluster_Sublocation_Centroids_2 = new L.MarkerClusterGroup({showCoverageOnHover: false,
+            spiderfyDistanceMultiplier: 2});
+        cluster_Sublocation_Centroids_2.addLayer(layer_Sublocation_Centroids_2);
+
         bounds_group.addLayer(layer_Sublocation_Centroids_2);
-        map.addLayer(layer_Sublocation_Centroids_2);
-        function pop_Routes_3(feature, layer) {
+        cluster_Sublocation_Centroids_2.addTo(map);
+        function pop_Busia_Sublocation_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['OBJECTID'] !== null ? autolinker.link(feature.properties['OBJECTID'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CouCode'] !== null ? autolinker.link(feature.properties['CouCode'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CouName'] !== null ? autolinker.link(feature.properties['CouName'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SCouCode'] !== null ? autolinker.link(feature.properties['SCouCode'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SCouName'] !== null ? autolinker.link(feature.properties['SCouName'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DivCode'] !== null ? autolinker.link(feature.properties['DivCode'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DivName'] !== null ? autolinker.link(feature.properties['DivName'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['LocCode'] !== null ? autolinker.link(feature.properties['LocCode'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['LocName'] !== null ? autolinker.link(feature.properties['LocName'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SLCode'] !== null ? autolinker.link(feature.properties['SLCode'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>SLName</strong><br />' + (feature.properties['SLName'] !== null ? autolinker.link(feature.properties['SLName'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['VillCode'] !== null ? autolinker.link(feature.properties['VillCode'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['VillName'] !== null ? autolinker.link(feature.properties['VillName'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['EAType'] !== null ? autolinker.link(feature.properties['EAType'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['EAStatus'] !== null ? autolinker.link(feature.properties['EAStatus'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['EAUniverse'] !== null ? autolinker.link(feature.properties['EAUniverse'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ConstCode'] !== null ? autolinker.link(feature.properties['ConstCode'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ConstName'] !== null ? autolinker.link(feature.properties['ConstName'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['WardCode'] !== null ? autolinker.link(feature.properties['WardCode'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['WardName'] !== null ? autolinker.link(feature.properties['WardName'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Shape_Leng'] !== null ? autolinker.link(feature.properties['Shape_Leng'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Shape_Area'] !== null ? autolinker.link(feature.properties['Shape_Area'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['VillCode_F'] !== null ? autolinker.link(feature.properties['VillCode_F'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_Busia_Sublocation_3_0() {
+            return {
+                pane: 'pane_Busia_Sublocation_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Busia_Sublocation_3');
+        map.getPane('pane_Busia_Sublocation_3').style.zIndex = 403;
+        map.getPane('pane_Busia_Sublocation_3').style['mix-blend-mode'] = 'normal';
+        var layer_Busia_Sublocation_3 = new L.geoJson(json_Busia_Sublocation_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Busia_Sublocation_3',
+            layerName: 'layer_Busia_Sublocation_3',
+            pane: 'pane_Busia_Sublocation_3',
+            onEachFeature: pop_Busia_Sublocation_3,
+            style: style_Busia_Sublocation_3_0,
+        });
+        bounds_group.addLayer(layer_Busia_Sublocation_3);
+        map.addLayer(layer_Busia_Sublocation_3);
+        function pop_Routes_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
             var popupContent = '<table>\
                     <tr>\
                         <td colspan="2">' + (feature.properties['RouteName'] !== null ? autolinker.link(feature.properties['RouteName'].toLocaleString()) : '') + '</td>\
@@ -245,7 +445,8 @@
                         <td colspan="2">' + (feature.properties['Total_Mile'] !== null ? autolinker.link(feature.properties['Total_Mile'].toLocaleString()) : '') + '</td>\
                     </tr>\
                     <tr>\
-                        <td colspan="2">' + (feature.properties['Total_Kilo'] !== null ? autolinker.link(feature.properties['Total_Kilo'].toLocaleString()) : '') + '</td>\
+                        <th scope="row">Total_Kilo</th>\
+                        <td>' + (feature.properties['Total_Kilo'] !== null ? autolinker.link(feature.properties['Total_Kilo'].toLocaleString()) : '') + '</td>\
                     </tr>\
                     <tr>\
                         <td colspan="2">' + (feature.properties['Total_Minu'] !== null ? autolinker.link(feature.properties['Total_Minu'].toLocaleString()) : '') + '</td>\
@@ -347,15 +548,16 @@
                         <td colspan="2">' + (feature.properties['To_ORIG_FI'] !== null ? autolinker.link(feature.properties['To_ORIG_FI'].toLocaleString()) : '') + '</td>\
                     </tr>\
                     <tr>\
-                        <td colspan="2">' + (feature.properties['To_Mileage'] !== null ? autolinker.link(feature.properties['To_Mileage'].toLocaleString()) : '') + '</td>\
+                        <th scope="row">To_Mileage</th>\
+                        <td>' + (feature.properties['To_Mileage'] !== null ? autolinker.link(feature.properties['To_Mileage'].toLocaleString()) : '') + '</td>\
                     </tr>\
                 </table>';
             layer.bindPopup(popupContent, {maxHeight: 400});
         }
 
-        function style_Routes_3_0() {
+        function style_Routes_4_0() {
             return {
-                pane: 'pane_Routes_3',
+                pane: 'pane_Routes_4',
                 opacity: 1,
                 color: 'rgba(72,123,182,1.0)',
                 dashArray: '',
@@ -366,77 +568,20 @@
                 interactive: true,
             }
         }
-        map.createPane('pane_Routes_3');
-        map.getPane('pane_Routes_3').style.zIndex = 403;
-        map.getPane('pane_Routes_3').style['mix-blend-mode'] = 'normal';
-        var layer_Routes_3 = new L.geoJson(json_Routes_3, {
+        map.createPane('pane_Routes_4');
+        map.getPane('pane_Routes_4').style.zIndex = 404;
+        map.getPane('pane_Routes_4').style['mix-blend-mode'] = 'normal';
+        var layer_Routes_4 = new L.geoJson(json_Routes_4, {
             attribution: '',
             interactive: true,
-            dataVar: 'json_Routes_3',
-            layerName: 'layer_Routes_3',
-            pane: 'pane_Routes_3',
-            onEachFeature: pop_Routes_3,
-            style: style_Routes_3_0,
+            dataVar: 'json_Routes_4',
+            layerName: 'layer_Routes_4',
+            pane: 'pane_Routes_4',
+            onEachFeature: pop_Routes_4,
+            style: style_Routes_4_0,
         });
-        bounds_group.addLayer(layer_Routes_3);
-        map.addLayer(layer_Routes_3);
-        function pop_Roads_4(feature, layer) {
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['osm_id'] !== null ? autolinker.link(feature.properties['osm_id'].toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['name'] !== null ? autolinker.link(feature.properties['name'].toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['ref'] !== null ? autolinker.link(feature.properties['ref'].toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['type'] !== null ? autolinker.link(feature.properties['type'].toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['oneway'] !== null ? autolinker.link(feature.properties['oneway'].toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['bridge'] !== null ? autolinker.link(feature.properties['bridge'].toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['tunnel'] !== null ? autolinker.link(feature.properties['tunnel'].toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2">' + (feature.properties['maxspeed'] !== null ? autolinker.link(feature.properties['maxspeed'].toLocaleString()) : '') + '</td>\
-                    </tr>\
-                </table>';
-            layer.bindPopup(popupContent, {maxHeight: 400});
-        }
-
-        function style_Roads_4_0() {
-            return {
-                pane: 'pane_Roads_4',
-                opacity: 1,
-                color: 'rgba(141,90,18,1.0)',
-                dashArray: '',
-                lineCap: 'square',
-                lineJoin: 'bevel',
-                weight: 1.0,
-                fillOpacity: 0,
-                interactive: true,
-            }
-        }
-        map.createPane('pane_Roads_4');
-        map.getPane('pane_Roads_4').style.zIndex = 404;
-        map.getPane('pane_Roads_4').style['mix-blend-mode'] = 'normal';
-        var layer_Roads_4 = new L.geoJson(json_Roads_4, {
-            attribution: '',
-            interactive: true,
-            dataVar: 'json_Roads_4',
-            layerName: 'layer_Roads_4',
-            pane: 'pane_Roads_4',
-            onEachFeature: pop_Roads_4,
-            style: style_Roads_4_0,
-        });
-        bounds_group.addLayer(layer_Roads_4);
-        map.addLayer(layer_Roads_4);
+        bounds_group.addLayer(layer_Routes_4);
+        map.addLayer(layer_Routes_4);
         var osmGeocoder = new L.Control.Geocoder({
             collapsed: true,
             position: 'topleft',
@@ -448,15 +593,51 @@
         document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
         .title += 'Search for a place';
         var baseMaps = {};
-        L.control.layers(baseMaps,{'<img src="legend/Roads_4.png" /> Roads': layer_Roads_4,'<img src="legend/Routes_3.png" /> Routes': layer_Routes_3,'<img src="legend/Sublocation_Centroids_2.png" /> Sublocation_Centroids': layer_Sublocation_Centroids_2,'<img src="legend/Busia_County_Boundary_1.png" /> Busia_County_Boundary': layer_Busia_County_Boundary_1,"Google Satellite Hybrid": layer_GoogleSatelliteHybrid_0,}).addTo(map);
+        L.control.layers(baseMaps,{'<img src="legend/Routes_4.png" /> Routes': layer_Routes_4,'<img src="legend/Busia_Sublocation_3.png" /> Busia_Sublocation': layer_Busia_Sublocation_3,'<img src="legend/Sublocation_Centroids_2.png" /> Sublocation_Centroids': cluster_Sublocation_Centroids_2,'<img src="legend/Busia_County_Boundary_1.png" /> Busia_County_Boundary': layer_Busia_County_Boundary_1,"Google Satellite Hybrid": layer_GoogleSatelliteHybrid_0,},{collapsed:false}).addTo(map);
         setBounds();
+        var i = 0;
+        layer_Sublocation_Centroids_2.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['SLName'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['SLName']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Sublocation_Centroids_2'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Busia_Sublocation_3.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['SLName'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['SLName']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Busia_Sublocation_3'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
         map.addControl(new L.Control.Search({
-            layer: layer_Sublocation_Centroids_2,
+            layer: layer_Busia_Sublocation_3,
             initial: false,
             hideMarkerOnCollapse: true,
             propertyName: 'SLName'}));
         document.getElementsByClassName('search-button')[0].className +=
          ' fa fa-binoculars';
+        resetLabels([layer_Sublocation_Centroids_2,layer_Busia_Sublocation_3]);
+        map.on("zoomend", function(){
+            resetLabels([layer_Sublocation_Centroids_2,layer_Busia_Sublocation_3]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_Sublocation_Centroids_2,layer_Busia_Sublocation_3]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_Sublocation_Centroids_2,layer_Busia_Sublocation_3]);
+        });
         </script>
     </body>
 </html>
